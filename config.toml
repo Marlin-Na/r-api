@@ -1,6 +1,6 @@
 baseurl = "https://example.org/"
 languageCode = "en-us"
-metadataformat = "yaml"
+#metadataformat = "yaml"
 title = "R's C API"
 theme = "hugo-alabaster-theme"
 
