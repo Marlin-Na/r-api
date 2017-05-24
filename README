@@ -1,0 +1,9 @@
+
+Please see https://marlin-na.github.io/r-api .
+
+The content in this repo is ported from https://github.com/hadley/r-internals by
+Hadley Wickham. If you are interested, please contribute there.
+
+Also, you can read Writing R Extensions (https://cran.r-project.org/doc/manuals/R-exts.html)
+and R Internals (https://cran.r-project.org/doc/manuals/r-release/R-ints.html)
+for additional information.
