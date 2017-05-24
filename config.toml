@@ -1,4 +1,4 @@
-baseurl = "https://example.org/"
+baseurl = "https://marlin-na.github.io/r-api/"
 languageCode = "en-us"
 #metadataformat = "yaml"
 title = "R's C API"
@@ -9,11 +9,11 @@ googleAnalytics = ""
 
 [params]
 	name = "R's C API"
-	description = "A documentation theme for Hugo."
+	description = "Documentation for R's internal C API"
 
-	github_user   = "digitalcraftsman"
-	github_repo   = "hugo-alabaster-theme"
-	github_banner = true
+	github_user   = "marlin-na"
+	github_repo   = "r-api"
+	github_banner = false
 
 	custom_css = []
 	custom_js  = []
@@ -25,7 +25,7 @@ googleAnalytics = ""
 	logo = "favicon.ico"
 
 
-	github_button  = false
+	github_button  = true
 	travis_button  = false
 	codecov_button = false
 	gratipay = ""
@@ -33,5 +33,5 @@ googleAnalytics = ""
 	show_relations = true
 
 [params.footer]
-	copyright = "[Digitalcraftsman](https://github.com/digitalcraftsman)"
+	#copyright = "[Digitalcraftsman](https://github.com/digitalcraftsman)"
 	show_powered_by = true
