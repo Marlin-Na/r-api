@@ -1,0 +1,196 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+	<head lang="en-us">
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+	<meta name="description" content="Documentation for R&#39;s internal C API">
+	<meta name="generator" content="Hugo 0.20.2" />
+	
+	<title> R&#39;s C API</title>
+	
+	<link rel="stylesheet" href="https://marlin-na.github.io/r-api/css/alabaster.css" type="text/css" />
+	<link rel="stylesheet" href="https://marlin-na.github.io/r-api/css/highlight.css" type="text/css" />
+
+	
+
+	<link rel="shortcut icon" href="https://marlin-na.github.io/r-api/favicon.ico" type="image/x-icon"/>
+</head>
+
+	<body role="document">
+		<div class="document">
+			<div class="documentwrapper">
+				<div class="bodywrapper">
+					<div class="body" role="main">
+						
+	
+		<h1>Index</h1>
+		
+
+<h1 id="r-internals">R internals</h1>
+
+<p>This repo aims to provide some useful additional information about R&rsquo;s internal C API, or Rapi for short. This site draws heavily from Section 5 (&ldquo;System and foreign language interfaces&rdquo;) of <a href="http://cran.r-project.org/doc/manuals/R-exts.html">Writing R extensions</a>, <a href="https://cran.r-project.org/doc/manuals/r-release/R-ints.html">R internals</a>, and inspection of R&rsquo;s source code to see how functions are used.</p>
+
+<p>Here we focus on best practices and modern tools. To wit, we recommend that you use <code>R_NO_REMAP</code> so all API functions have the prefix <code>R_</code> or <code>Rf_</code>:</p>
+
+<pre><code class="language-c">#define R_NO_REMAP
+#include &lt;R.h&gt;
+#include &lt;Rinternals.h&gt;
+</code></pre>
+
+<p>(Including <code>&lt;Rinternals.h&gt;</code> seems like bad form. However, it doesn&rsquo;t actually give you access to the &ldquo;internal&rdquo; internal API unless you set some additional flags. Instead it lets you access the &ldquo;public&rdquo; internal API, which is both necessary and safe. Yes, this is confusing.)</p>
+
+<h2 id="sexps">SEXPs</h2>
+
+<p>At the C-level, all R objects are stored in a common datatype, the <code>SEXP</code>, or S-expression. A <code>SEXP</code> is a variant type, with subtypes or <code>SEXPTYPE</code>s for all R&rsquo;s data structures. This site roughly breaks Rapi into chapters based on the <code>SEXPTYPE</code> the functions work with:</p>
+
+<ul>
+<li><p><a href="/r-api/vectors/">Vectors</a> cover the most important data structures: vectors.
+This includes <code>LGLSXP</code>, <code>INTSXP</code>, <code>REALSXP</code>, <code>CPLXSXP</code>, <code>STRSXP</code>, <code>VECSXP</code>,
+<code>RAWSXP</code>, and <code>EXPRSXP</code>.</p></li>
+
+<li><p><a href="/r-api/strings/">Strings</a>: Character vectors are a more complex object made of
+vector <code>CHARSXP</code>s.</p></li>
+
+<li><p><a href="/r-api/environments/">Environments</a>, or <code>ENVSXP</code>s.</p></li>
+
+<li><p><a href="/r-api/functions/">Functions</a>, including <code>CLOSXP</code>s and the rarer <code>BUILTINSXP</code>s,
+<code>SPECIALSXP</code>s and <code>FUNSXPs</code>.</p></li>
+
+<li><p><a href="/r-api/symbols/">Symbols</a>, <code>SYMSXP</code>s.</p></li>
+
+<li><p><a href="/r-api/pairlists/">Pairlists</a>, including <code>LISTSXP</code>s and the related
+<code>NILSXP</code>, <code>LANGSXP</code>, and <code>DOTSXP</code>. This chapter also includes a discussion
+of attributes, which are powered by pair lists.</p></li>
+
+<li><p><a href="/r-api/external-pointers/">External pointers</a>, or <code>XPTRSXP</code>s.</p></li>
+</ul>
+
+<p>Other categories are:</p>
+
+<ul>
+<li><a href="/r-api/error-eval/">Evaluating code and handling errors</a>.</li>
+<li><a href="/r-api/gc-rc/">Garbage collection and reference counting</a>.</li>
+<li><a href="/r-api/oo/">Object oriented code</a> (including <code>S4SXP</code>s).</li>
+<li><a href="/r-api/misc/">Other miscellaneous functions</a>.</li>
+<li><a href="/r-api/save-load/">Serialisation</a>.</li>
+</ul>
+
+	
+
+
+						
+					</div>
+				</div>
+			</div>
+			
+			<div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+	<div class="sphinxsidebarwrapper">
+		<p class="logo">
+			<a href="https://marlin-na.github.io/r-api/">
+				<img class="logo" src="https://marlin-na.github.io/r-api/favicon.ico" alt="Logo"/>
+				<h1 class="logo logo-name">R&#39;s C API</h1>
+			</a>
+		</p>
+		
+		<p class="blurb">Documentation for R&rsquo;s internal C API</p>
+
+		
+
+	<p>
+		<iframe src="https://ghbtns.com/github-btn.html?user=marlin-na&repo=r-api&type=watch&count=true&size=large"
+		allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+	</p>
+
+	
+
+	
+		
+
+		
+
+<h3>Navigation</h3>
+<ul>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/readme/">Index</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/environments/">environments.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/error-eval/">error-eval.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/external-pointers/">external-pointers.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/functions/">functions.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/gc-rc/">gc-rc.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/misc/">misc.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/oo/">oo.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/pairlists/">pairlists.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/save-load/">save-load.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/strings/">strings.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/symbols/">symbols.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/vectors/">vectors.md</a>
+	</li>
+	
+</ul>
+
+
+		
+
+	</div>
+</div>
+<div class="clearer"></div>
+</div>
+			<div class="footer">
+	&copy; 2017 
+	|
+	Powered by <a href="http://gohugo.io/">Hugo 0.20.2</a>
+	&amp; <a href="https://github.com/digitalcraftsman/hugo-alabaster-theme">Alabaster</a>
+	
+</div>
+
+
+
+
+			
+
+			<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.3.0/highlight.min.js"></script>
+			<script>hljs.initHighlightingOnLoad();</script>
+			
+
+			
+		</div>
+	</body>
+</html>

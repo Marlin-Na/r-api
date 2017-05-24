@@ -1,0 +1,226 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+	<head lang="en-us">
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+	<meta name="description" content="Documentation for R&#39;s internal C API">
+	<meta name="generator" content="Hugo 0.20.2" />
+	
+	<title>symbols.md &mdash; R&#39;s C API</title>
+	
+	<link rel="stylesheet" href="https://marlin-na.github.io/r-api/css/alabaster.css" type="text/css" />
+	<link rel="stylesheet" href="https://marlin-na.github.io/r-api/css/highlight.css" type="text/css" />
+
+	
+
+	<link rel="shortcut icon" href="https://marlin-na.github.io/r-api/favicon.ico" type="image/x-icon"/>
+</head>
+
+	<body role="document">
+		<div class="document">
+			<div class="documentwrapper">
+				<div class="bodywrapper">
+					<div class="body" role="main">
+						
+	<h1>symbols.md</h1>
+	
+	
+
+<h1 id="symbols-symsxp">Symbols (<code>SYMSXP</code>)</h1>
+
+<pre><code class="language-cpp">Rboolean Rf_isSymbol(SEXP s);
+</code></pre>
+
+<h2 id="create">Create</h2>
+
+<p>If symbol exists, return it; otherwise create it. <code>SYMSXP</code>s don&rsquo;t need to be protected because symbols are not currently reclaimed by the garbage collector. If you are using a symbol many times, it may be worth caching it to avoid repeated lookups.</p>
+
+<pre><code class="language-cpp">SEXP Rf_install(const char *);
+SEXP Rf_installChar(SEXP);
+</code></pre>
+
+<h2 id="mising-symbol">Mising symbol</h2>
+
+<p><code>R_MissingArg</code> represents the missing/empty symbol, i.e. the second argument in this call <code>f(x, )</code>.</p>
+
+<h2 id="predefined-symbols">Predefined symbols</h2>
+
+<p>A number of symbols are so commonly used, they&rsquo;re predefined and exported:</p>
+
+<ul>
+<li><code>R_dot_defined</code>: &ldquo;.defined&rdquo;</li>
+<li><code>R_dot_Method</code>: &ldquo;.Method&rdquo;</li>
+<li><code>R_dot_packageName</code>:  &ldquo;.packageName&rdquo;</li>
+<li><code>R_dot_target</code>: &ldquo;.target&rdquo;</li>
+<li><code>R_BaseSymbol</code>: &ldquo;base&rdquo;</li>
+<li><code>R_BraceSymbol</code>: &ldquo;{&rdquo;</li>
+<li><code>R_Bracket2Symbol</code>: &ldquo;[[&rdquo;</li>
+<li><code>R_BracketSymbol</code>: &ldquo;[&rdquo;</li>
+<li><code>R_ClassSymbol</code>: &ldquo;class&rdquo;</li>
+<li><code>R_DeviceSymbol</code>: &ldquo;.Device&rdquo;</li>
+<li><code>R_DimNamesSymbol</code>: &ldquo;dimnames&rdquo;</li>
+<li><code>R_DimSymbol</code>: &ldquo;dim&rdquo;</li>
+<li><code>R_DollarSymbol</code>: &ldquo;$&rdquo;</li>
+<li><code>R_DotsSymbol</code>: &ldquo;&hellip;&rdquo;</li>
+<li><code>R_DoubleColonSymbol</code>:  &ldquo;::&rdquo;</li>
+<li><code>R_DropSymbol</code>: &ldquo;drop&rdquo;</li>
+<li><code>R_LastvalueSymbol</code>: &ldquo;.Last.value&rdquo;</li>
+<li><code>R_LevelsSymbol</code>: &ldquo;levels&rdquo;</li>
+<li><code>R_ModeSymbol</code>: &ldquo;mode&rdquo;</li>
+<li><code>R_NaRmSymbol</code>: &ldquo;na.rm&rdquo;</li>
+<li><code>R_NameSymbol</code>: &ldquo;name&rdquo;</li>
+<li><code>R_NamesSymbol</code>: &ldquo;names&rdquo;</li>
+<li><code>R_NamespaceEnvSymbol</code>:  &ldquo;.__NAMESPACE__.&rdquo;</li>
+<li><code>R_PackageSymbol</code>: &ldquo;package&rdquo;</li>
+<li><code>R_PreviousSymbol</code>: &ldquo;previous&rdquo;</li>
+<li><code>R_QuoteSymbol</code>: &ldquo;quote&rdquo;</li>
+<li><code>R_RowNamesSymbol</code>: &ldquo;row.names&rdquo;</li>
+<li><code>R_SeedsSymbol</code>: &ldquo;.Random.seed&rdquo;</li>
+<li><code>R_SortListSymbol</code>: &ldquo;sort.list&rdquo;</li>
+<li><code>R_SourceSymbol</code>: &ldquo;source&rdquo;</li>
+<li><code>R_SpecSymbol</code>: &ldquo;spec&rdquo;</li>
+<li><code>R_TripleColonSymbol</code>:  &ldquo;:::&rdquo;</li>
+<li><code>R_TspSymbol</code>: &ldquo;tsp&rdquo;</li>
+</ul>
+
+<h2 id="internals">Internals</h2>
+
+<pre><code class="language-cpp">// The value of the symbol, as a CHARSXP
+// Use CHAR(PRINTNAME(x)) to get the name as a const char*
+SEXP (PRINTNAME)(SEXP x);
+void SET_PRINTNAME(SEXP x, SEXP v);
+
+SEXP (SYMVALUE)(SEXP x);
+void SET_SYMVALUE(SEXP x, SEXP v);
+
+SEXP (INTERNAL)(SEXP x);
+void SET_INTERNAL(SEXP x, SEXP v);
+
+int  (DDVAL)(SEXP x);
+void (SET_DDVAL)(SEXP x, int v);
+SEXP Rf_installDDVAL(int i);
+</code></pre>
+
+
+
+						
+					</div>
+				</div>
+			</div>
+			
+			<div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+	<div class="sphinxsidebarwrapper">
+		<p class="logo">
+			<a href="https://marlin-na.github.io/r-api/">
+				<img class="logo" src="https://marlin-na.github.io/r-api/favicon.ico" alt="Logo"/>
+				<h1 class="logo logo-name">R&#39;s C API</h1>
+			</a>
+		</p>
+		
+		<p class="blurb">Documentation for R&rsquo;s internal C API</p>
+
+		
+
+	<p>
+		<iframe src="https://ghbtns.com/github-btn.html?user=marlin-na&repo=r-api&type=watch&count=true&size=large"
+		allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+	</p>
+
+	
+
+	
+		
+
+		
+
+<h3>Navigation</h3>
+<ul>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/readme/">Index</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/environments/">environments.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/error-eval/">error-eval.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/external-pointers/">external-pointers.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/functions/">functions.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/gc-rc/">gc-rc.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/misc/">misc.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/oo/">oo.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/pairlists/">pairlists.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/save-load/">save-load.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/strings/">strings.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/symbols/">symbols.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/vectors/">vectors.md</a>
+	</li>
+	
+</ul>
+
+
+		<h3>Related Topics</h3>
+<ul>
+  <li><a href="https://marlin-na.github.io/r-api/">Documentation overview</a><ul>
+  <li>Previous: <a href="https://marlin-na.github.io/r-api/vectors/" title="vectors.md">vectors.md</a></li>
+  <li>Next: <a href="https://marlin-na.github.io/r-api/strings/" title="strings.md">strings.md</a></li>
+</ul>
+
+	</div>
+</div>
+<div class="clearer"></div>
+</div>
+			<div class="footer">
+	&copy; 2017 
+	|
+	Powered by <a href="http://gohugo.io/">Hugo 0.20.2</a>
+	&amp; <a href="https://github.com/digitalcraftsman/hugo-alabaster-theme">Alabaster</a>
+	
+</div>
+
+
+
+
+			
+
+			<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.3.0/highlight.min.js"></script>
+			<script>hljs.initHighlightingOnLoad();</script>
+			
+
+			
+		</div>
+	</body>
+</html>

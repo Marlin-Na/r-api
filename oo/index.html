@@ -1,0 +1,203 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+	<head lang="en-us">
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+	<meta name="description" content="Documentation for R&#39;s internal C API">
+	<meta name="generator" content="Hugo 0.20.2" />
+	
+	<title>oo.md &mdash; R&#39;s C API</title>
+	
+	<link rel="stylesheet" href="https://marlin-na.github.io/r-api/css/alabaster.css" type="text/css" />
+	<link rel="stylesheet" href="https://marlin-na.github.io/r-api/css/highlight.css" type="text/css" />
+
+	
+
+	<link rel="shortcut icon" href="https://marlin-na.github.io/r-api/favicon.ico" type="image/x-icon"/>
+</head>
+
+	<body role="document">
+		<div class="document">
+			<div class="documentwrapper">
+				<div class="bodywrapper">
+					<div class="body" role="main">
+						
+	<h1>oo.md</h1>
+	
+	
+
+<h1 id="object-oriented-programming">Object oriented programming</h1>
+
+<p><code>ANYSXP</code> is used internal in S4 class definitions to flag that any SEXP is ok.</p>
+
+<pre><code class="language-cpp">Rboolean (Rf_isObject)(SEXP s);
+</code></pre>
+
+<h2 id="s3">S3</h2>
+
+<pre><code class="language-cpp">Rboolean Rf_inherits(SEXP, const char *);
+SEXP Rf_S3Class(SEXP);
+int Rf_isBasicClass(const char *);
+SEXP Rf_classgets(SEXP, SEXP);
+</code></pre>
+
+<h2 id="s4-s4sxp">S4 (<code>S4SXP</code>)</h2>
+
+<pre><code class="language-cpp">Rboolean Rf_isS4(SEXP);
+SEXP Rf_asS4(SEXP, Rboolean, int);
+SEXP Rf_allocS4Object(void);
+</code></pre>
+
+<pre><code class="language-cpp">/* S3-S4 class (inheritance), attrib.c */
+SEXP R_S4_extends(SEXP klass, SEXP useTable);
+
+/* class definition, new objects (objects.c) */
+SEXP R_do_MAKE_CLASS(const char *what);
+SEXP R_getClassDef  (const char *what);
+SEXP R_getClassDef_R(SEXP what);
+Rboolean R_has_methods_attached(void);
+Rboolean R_isVirtualClass(SEXP class_def, SEXP env);
+Rboolean R_extends  (SEXP class1, SEXP class2, SEXP env);
+SEXP R_do_new_object(SEXP class_def);
+/* supporting  a C-level version of  is(., .) : */
+int R_check_class_and_super(SEXP x, const char **valid, SEXP rho);
+int R_check_class_etc      (SEXP x, const char **valid);
+</code></pre>
+
+<h3 id="internals">Internals</h3>
+
+<pre><code class="language-cpp">int (IS_S4_OBJECT)(SEXP x);
+void (SET_S4_OBJECT)(SEXP x);
+void (UNSET_S4_OBJECT)(SEXP x);
+</code></pre>
+
+<h3 id="slots">Slots</h3>
+
+<pre><code class="language-cpp">SEXP R_do_slot(SEXP obj, SEXP name);
+SEXP R_do_slot_assign(SEXP obj, SEXP name, SEXP value);
+int R_has_slot(SEXP obj, SEXP name);
+</code></pre>
+
+
+
+						
+					</div>
+				</div>
+			</div>
+			
+			<div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+	<div class="sphinxsidebarwrapper">
+		<p class="logo">
+			<a href="https://marlin-na.github.io/r-api/">
+				<img class="logo" src="https://marlin-na.github.io/r-api/favicon.ico" alt="Logo"/>
+				<h1 class="logo logo-name">R&#39;s C API</h1>
+			</a>
+		</p>
+		
+		<p class="blurb">Documentation for R&rsquo;s internal C API</p>
+
+		
+
+	<p>
+		<iframe src="https://ghbtns.com/github-btn.html?user=marlin-na&repo=r-api&type=watch&count=true&size=large"
+		allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+	</p>
+
+	
+
+	
+		
+
+		
+
+<h3>Navigation</h3>
+<ul>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/readme/">Index</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/environments/">environments.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/error-eval/">error-eval.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/external-pointers/">external-pointers.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/functions/">functions.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/gc-rc/">gc-rc.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/misc/">misc.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/oo/">oo.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/pairlists/">pairlists.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/save-load/">save-load.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/strings/">strings.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/symbols/">symbols.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/vectors/">vectors.md</a>
+	</li>
+	
+</ul>
+
+
+		<h3>Related Topics</h3>
+<ul>
+  <li><a href="https://marlin-na.github.io/r-api/">Documentation overview</a><ul>
+  <li>Previous: <a href="https://marlin-na.github.io/r-api/pairlists/" title="pairlists.md">pairlists.md</a></li>
+  <li>Next: <a href="https://marlin-na.github.io/r-api/misc/" title="misc.md">misc.md</a></li>
+</ul>
+
+	</div>
+</div>
+<div class="clearer"></div>
+</div>
+			<div class="footer">
+	&copy; 2017 
+	|
+	Powered by <a href="http://gohugo.io/">Hugo 0.20.2</a>
+	&amp; <a href="https://github.com/digitalcraftsman/hugo-alabaster-theme">Alabaster</a>
+	
+</div>
+
+
+
+
+			
+
+			<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.3.0/highlight.min.js"></script>
+			<script>hljs.initHighlightingOnLoad();</script>
+			
+
+			
+		</div>
+	</body>
+</html>

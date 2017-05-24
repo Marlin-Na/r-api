@@ -1,0 +1,292 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+	<head lang="en-us">
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+	<meta name="description" content="Documentation for R&#39;s internal C API">
+	<meta name="generator" content="Hugo 0.20.2" />
+	
+	<title>environments.md &mdash; R&#39;s C API</title>
+	
+	<link rel="stylesheet" href="https://marlin-na.github.io/r-api/css/alabaster.css" type="text/css" />
+	<link rel="stylesheet" href="https://marlin-na.github.io/r-api/css/highlight.css" type="text/css" />
+
+	
+
+	<link rel="shortcut icon" href="https://marlin-na.github.io/r-api/favicon.ico" type="image/x-icon"/>
+</head>
+
+	<body role="document">
+		<div class="document">
+			<div class="documentwrapper">
+				<div class="bodywrapper">
+					<div class="body" role="main">
+						
+	<h1>environments.md</h1>
+	
+	
+
+<h1 id="environments-envsxp">Environments (<code>ENVSXP</code>)</h1>
+
+<pre><code class="language-cpp">Rboolean Rf_isEnvironment(SEXP x); // (TYPEOF(x) == ENVSXP)
+</code></pre>
+
+<ul>
+<li><code>R_GlobalEnv</code>: The &ldquo;global&rdquo; environment</li>
+<li><code>R_EmptyEnv</code>: An empty environment at the root of the environment tree</li>
+<li><code>R_BaseEnv</code>: The base environment; formerly R_NilValue</li>
+<li><code>R_BaseNamespace</code>: The (fake) namespace for base</li>
+<li><code>R_NamespaceRegistry</code>: Registry for registered namespaces</li>
+</ul>
+
+<p>Environments are commonly called <code>rho</code> in the sources.</p>
+
+<h2 id="get-and-set-objects-in-environment">Get and set objects in environment</h2>
+
+<p><code>symbol</code> should be a <code>SYMSXP</code>; <code>environment</code> should be an <code>ENVSXP</code>.</p>
+
+<h3 id="get-values">Get values</h3>
+
+<p>Note that retrieving an variable from an environment may cause an allocation because it might be an active binding.</p>
+
+<pre><code class="language-cpp">// Look up symbol in environment, following up enclosing envs
+SEXP Rf_findVar(SEXP symbol, SEXP environment);
+
+// Look up symbol in environment, ignoring non-functions
+SEXP Rf_findFun(SEXP symbol, SEXP environment);
+
+// Look in single environment
+// Returns R_UnboundValue if not found
+// doGet: if TRUE, returns value; if FALSE just checks for presence
+SEXP Rf_findVarInFrame3(SEXP env, SEXP symbol, Rboolean doGet);
+
+// Shortcut from findVarInFrame3(rho, symbol, TRUE)
+SEXP Rf_findVarInFrame(SEXP env, SEXP symbol);
+</code></pre>
+
+<h3 id="set-values">Set values</h3>
+
+<pre><code class="language-cpp">// Define value
+void Rf_defineVar(SEXP symbol, SEXP value, SEXP env);
+
+// Copy variables from (VECSXP) unless already present in to
+void Rf_addMissingVarsToNewEnv(SEXP to, SEXP from);
+</code></pre>
+
+<h3 id="check-for-presence">Check for presence</h3>
+
+<pre><code class="language-cpp">// Returns character vector
+SEXP R_lsInternal3(SEXP env, Rboolean all_names, Rboolean sorted);
+
+// Shorthand for R_lsInternal3(env, all, TRUE)
+SEXP R_lsInternal(SEXP, Rboolean);
+</code></pre>
+
+<h2 id="miscellaneous">Miscellaneous</h2>
+
+<pre><code class="language-cpp">Rboolean R_IsPackageEnv(SEXP rho);
+SEXP R_PackageEnvName(SEXP rho);
+SEXP R_FindPackageEnv(SEXP info);
+Rboolean R_IsNamespaceEnv(SEXP rho);
+SEXP R_NamespaceEnvSpec(SEXP rho);
+SEXP R_FindNamespace(SEXP info);
+void R_LockEnvironment(SEXP env, Rboolean bindings);
+Rboolean R_EnvironmentIsLocked(SEXP env);
+void R_LockBinding(SEXP sym, SEXP env);
+void R_unLockBinding(SEXP sym, SEXP env);
+void R_MakeActiveBinding(SEXP sym, SEXP fun, SEXP env);
+Rboolean R_BindingIsLocked(SEXP sym, SEXP env);
+Rboolean R_BindingIsActive(SEXP sym, SEXP env);
+Rboolean R_HasFancyBindings(SEXP rho);
+Rboolean R_envHasNoSpecialSymbols(SEXP);
+</code></pre>
+
+<h2 id="internals">Internals</h2>
+
+<pre><code class="language-cpp">SEXP FRAME(SEXP x);
+void SET_FRAME(SEXP x, SEXP v);
+
+SEXP ENCLOS(SEXP x);
+void SET_ENCLOS(SEXP x, SEXP v);
+
+int  ENVFLAGS(SEXP x);
+void SET_ENVFLAGS(SEXP x, int v);
+</code></pre>
+
+<h3 id="truelength">Truelength</h3>
+
+<blockquote>
+<p>This is almost unused. The only current use is for hash tables of
+environments (VECSXPs), where length is the size of the table and
+truelength is the number of primary slots in use, and for the reference
+hash tables in serialization (VECSXPs), where truelength is the number of
+slots in use.
+&mdash; R-internals</p>
+</blockquote>
+
+<pre><code class="language-cpp">int  (TRUELENGTH)(SEXP x);
+R_xlen_t  (XTRUELENGTH)(SEXP x);
+void (SET_TRUELENGTH)(SEXP x, int v);
+</code></pre>
+
+<h3 id="hash">Hash</h3>
+
+<pre><code class="language-cpp">SEXP HASHTAB(SEXP x);
+void SET_HASHTAB(SEXP x, SEXP v);
+
+int  HASHASH(SEXP x);
+void SET_HASHASH(SEXP x, int v);
+
+int  HASHVALUE(SEXP x);
+void SET_HASHVALUE(SEXP x, int v);
+</code></pre>
+
+<p>Code from lobstr should help me understand how they work:</p>
+
+<pre><code class="language-cpp">int envlength(SEXP x) {
+  bool isHashed = HASHTAB(x) != R_NilValue;
+  return isHashed ? HashTableSize(HASHTAB(x)) : FrameSize(FRAME(x));
+}
+
+int FrameSize(SEXP frame) {
+  int count = 0;
+
+  for(SEXP cur = frame; cur != R_NilValue; cur = CDR(cur)) {
+    if (CAR(cur) != R_UnboundValue)
+      count++;
+  }
+  return count;
+}
+
+int HashTableSize(SEXP table) {
+  int count = 0;
+  int n = Rf_length(table);
+  for (int i = 0; i &lt; n; ++i)
+    count += FrameSize(VECTOR_ELT(table, i));
+  return count;
+}
+</code></pre>
+
+
+
+						
+					</div>
+				</div>
+			</div>
+			
+			<div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+	<div class="sphinxsidebarwrapper">
+		<p class="logo">
+			<a href="https://marlin-na.github.io/r-api/">
+				<img class="logo" src="https://marlin-na.github.io/r-api/favicon.ico" alt="Logo"/>
+				<h1 class="logo logo-name">R&#39;s C API</h1>
+			</a>
+		</p>
+		
+		<p class="blurb">Documentation for R&rsquo;s internal C API</p>
+
+		
+
+	<p>
+		<iframe src="https://ghbtns.com/github-btn.html?user=marlin-na&repo=r-api&type=watch&count=true&size=large"
+		allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+	</p>
+
+	
+
+	
+		
+
+		
+
+<h3>Navigation</h3>
+<ul>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/readme/">Index</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/environments/">environments.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/error-eval/">error-eval.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/external-pointers/">external-pointers.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/functions/">functions.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/gc-rc/">gc-rc.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/misc/">misc.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/oo/">oo.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/pairlists/">pairlists.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/save-load/">save-load.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/strings/">strings.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/symbols/">symbols.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/vectors/">vectors.md</a>
+	</li>
+	
+</ul>
+
+
+		<h3>Related Topics</h3>
+<ul>
+  <li><a href="https://marlin-na.github.io/r-api/">Documentation overview</a><ul>
+  <li>Previous: <a href="https://marlin-na.github.io/r-api/error-eval/" title="error-eval.md">error-eval.md</a></li>
+  <li>Next: <a href="https://marlin-na.github.io/r-api/readme/" title="Index">Index</a></li>
+</ul>
+
+	</div>
+</div>
+<div class="clearer"></div>
+</div>
+			<div class="footer">
+	&copy; 2017 
+	|
+	Powered by <a href="http://gohugo.io/">Hugo 0.20.2</a>
+	&amp; <a href="https://github.com/digitalcraftsman/hugo-alabaster-theme">Alabaster</a>
+	
+</div>
+
+
+
+
+			
+
+			<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.3.0/highlight.min.js"></script>
+			<script>hljs.initHighlightingOnLoad();</script>
+			
+
+			
+		</div>
+	</body>
+</html>

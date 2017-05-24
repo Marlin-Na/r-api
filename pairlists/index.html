@@ -1,0 +1,289 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+	<head lang="en-us">
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+	<meta name="description" content="Documentation for R&#39;s internal C API">
+	<meta name="generator" content="Hugo 0.20.2" />
+	
+	<title>pairlists.md &mdash; R&#39;s C API</title>
+	
+	<link rel="stylesheet" href="https://marlin-na.github.io/r-api/css/alabaster.css" type="text/css" />
+	<link rel="stylesheet" href="https://marlin-na.github.io/r-api/css/highlight.css" type="text/css" />
+
+	
+
+	<link rel="shortcut icon" href="https://marlin-na.github.io/r-api/favicon.ico" type="image/x-icon"/>
+</head>
+
+	<body role="document">
+		<div class="document">
+			<div class="documentwrapper">
+				<div class="bodywrapper">
+					<div class="body" role="main">
+						
+	<h1>pairlists.md</h1>
+	
+	
+
+<h1 id="pairlists-listsxp-dotsxp-langsxp">Pairlists (<code>LISTSXP</code>, <code>DOTSXP</code> &amp; <code>LANGSXP</code>)</h1>
+
+<p>Pairlists are linked lists used for calls, unevaluated arguments, attributes, and in <code>...</code>.</p>
+
+<pre><code class="language-cpp">Rboolean Rf_isPairList(SEXP); // LISTSXP
+Rboolean Rf_isLanguage(SEXP); // LANGSXP
+Rboolean Rf_isList(SEXP);     // LISTSXP, NILSXP
+</code></pre>
+
+<p>The terminology of pairlist comes from LISPs &ldquo;dotted pairs&rdquo; which is a way of describing &ldquo;CONS&rdquo; cells. A CONS cell is a pair of pointers:</p>
+
+<ul>
+<li>&ldquo;CAR&rdquo; (contents of address register) points to an object</li>
+<li>&ldquo;CDR&rdquo; (contents of decrement register) points to the next element in the list.
+The CDR of the last element is <code>R_NilValue</code>.</li>
+</ul>
+
+<p>Graphically, this looks like:</p>
+
+<p><img src="/r-api/diagrams/pairlists.png" alt="" /></p>
+
+<p>To loop over all elements of a pairlist, use this template:</p>
+
+<pre><code class="language-cpp">int length(SEXP s) {
+  int i = 0;
+  
+  for(SEXP cons = x; cons != R_NilValue; cons = CDR(nxt) {
+    SEXP el = CAR(cons);
+    i++;
+  }
+  
+  return i;
+}
+</code></pre>
+
+<h2 id="creation">Creation</h2>
+
+<pre><code class="language-cpp">SEXP Rf_cons(SEXP a, SEXP b)   // function arguments
+SEXP Rf_lcons(SEXP a, SEXP b)  // calls
+</code></pre>
+
+<p>The <code>CDR</code> of the final value msut be <code>R_NilValue</code>.</p>
+
+<p>There are helpers for 5-6 arguments. These automatically add the terminating <code>R_NilValue</code>.</p>
+
+<pre><code class="language-cpp">SEXP Rf_list1(SEXP x1);
+SEXP Rf_list2(SEXP x1, SEXP x2);
+SEXP Rf_list3(SEXP x1, SEXP x2, SEXP x3);
+SEXP Rf_list4(SEXP x1, SEXP x2, SEXP x3, SEXP x4);
+SEXP Rf_list5(SEXP x1, SEXP x2, SEXP x3, SEXP x4, SEXP x5);
+
+SEXP Rf_lang1(SEXP x1);
+SEXP Rf_lang2(SEXP x1, SEXP x2);
+SEXP Rf_lang3(SEXP x1, SEXP x2, SEXP x3);
+SEXP Rf_lang4(SEXP x1, SEXP x2, SEXP x3, SEXP x4);
+SEXP Rf_lang5(SEXP x1, SEXP x2, SEXP x3, SEXP x4, SEXP x5);
+SEXP Rf_lang6(SEXP x1, SEXP x2, SEXP x3, SEXP x4, SEXP x5, SEXP x6);
+
+SEXP Rf_allocFormalsList2(SEXP x1, SEXP x2);
+SEXP Rf_allocFormalsList3(SEXP x1, SEXP x2, SEXP x3);
+SEXP Rf_allocFormalsList4(SEXP x1, SEXP x2, SEXP x3, SEXP x4);
+SEXP Rf_allocFormalsList5(SEXP x1, SEXP x2, SEXP x3, SEXP x4, SEXP x5);
+SEXP Rf_allocFormalsList6(SEXP x1, SEXP x2, SEXP x3, SEXP x4, SEXP x5, SEXP x6);
+</code></pre>
+
+<pre><code class="language-cpp">SEXP Rf_PairToVectorList(SEXP x);
+SEXP Rf_VectorToPairList(SEXP x);
+SEXP Rf_listAppend(SEXP source, SEXP target);
+</code></pre>
+
+<h2 id="accessors">Accessors</h2>
+
+<p>Unlike lists (<code>VECSXP</code>s), pairlists (<code>LISTSXP</code>s) have no way to index into an arbitrary location. Instead, R provides a set of helper functions that navigate along a linked list. The basic helpers are <code>CAR()</code>, which extracts the first element of the list, and <code>CDR()</code>, which extracts the rest of the list. These can be composed to get <code>CAAR()</code>, <code>CDAR()</code>, <code>CADDR()</code>, <code>CADDDR()</code>, and so on. Corresponding to the getters, R provides setters <code>SETCAR()</code>, <code>SETCDR()</code>, etc.</p>
+
+<p><img src="/r-api/diagrams/pairlist-names.png" alt="" /></p>
+
+<pre><code class="language-cpp">SEXP CAR(SEXP e);
+SEXP CDR(SEXP e);
+SEXP CAAR(SEXP e);
+SEXP CDAR(SEXP e);
+SEXP CADR(SEXP e);
+SEXP CDDR(SEXP e);
+SEXP CDDDR(SEXP e);
+SEXP CADDR(SEXP e);
+SEXP CADDDR(SEXP e);
+SEXP CAD4R(SEXP e);
+SEXP SETCAR(SEXP x, SEXP y);
+SEXP SETCDR(SEXP x, SEXP y);
+SEXP SETCADR(SEXP x, SEXP y);
+SEXP SETCADDR(SEXP x, SEXP y);
+SEXP SETCADDDR(SEXP x, SEXP y);
+SEXP SETCAD4R(SEXP e, SEXP y);
+
+void SET_TAG(SEXP x, SEXP y);
+SEXP (TAG)(SEXP e);
+
+// CONS with no-refcounting ?
+SEXP CONS_NR(SEXP a, SEXP b);
+
+
+// Used for missing values in function calls?
+int  (MISSING)(SEXP x);
+void (SET_MISSING)(SEXP x, int v);
+</code></pre>
+
+<h3 id="pretending-it-s-a-vector">Pretending it&rsquo;s a vector</h3>
+
+<p>Some functions allow you to work with a pair list as if it&rsquo;s a vector:</p>
+
+<pre><code class="language-cpp">SEXP Rf_allocList(int n);   # create new pairlist of specified length 
+SEXP Rf_nthcdr(SEXP, int);  # access nth element
+</code></pre>
+
+<p>If you use these it&rsquo;s easy to get O(n^2) behaviour, but for the usual size of pairlists, this is unlikely to cause a performance bottleneck.</p>
+
+<h2 id="dots-dotsxp">Dots (<code>DOTSXP</code>)</h2>
+
+<p>Represents the <code>...</code> structure in R. Easiest to get to with <code>findVar(R_DotsSymbol, env)</code> or similar. Is usually a pair list, but will have value <code>R_MissingArg</code> if there are no arguments.</p>
+
+<h2 id="null-nilsxp">Null (<code>NILSXP</code>)</h2>
+
+<p>There is a single value with type <code>NILSXP</code>: <code>R_NilValue</code>.  This corresponds to <code>NULL</code> in R, and is often used as generic zero length vector.</p>
+
+<h2 id="attributes">Attributes</h2>
+
+<pre><code class="language-cpp">SEXP Rf_getAttrib(SEXP x, SEXP symbol);
+SEXP Rf_setAttrib(SEXP x, SEXP symbol, SEXP value);
+
+// Copies attributes except names, dim, and dimnames
+void Rf_copyMostAttrib(SEXP source, SEXP target);
+
+// Get the pairlist containing the attributes
+SEXP (ATTRIB)(SEXP x);
+void SET_ATTRIB(SEXP x, SEXP v);
+void DUPLICATE_ATTRIB(SEXP to, SEXP from);
+void SHALLOW_DUPLICATE_ATTRIB(SEXP to, SEXP from);
+</code></pre>
+
+
+
+						
+					</div>
+				</div>
+			</div>
+			
+			<div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+	<div class="sphinxsidebarwrapper">
+		<p class="logo">
+			<a href="https://marlin-na.github.io/r-api/">
+				<img class="logo" src="https://marlin-na.github.io/r-api/favicon.ico" alt="Logo"/>
+				<h1 class="logo logo-name">R&#39;s C API</h1>
+			</a>
+		</p>
+		
+		<p class="blurb">Documentation for R&rsquo;s internal C API</p>
+
+		
+
+	<p>
+		<iframe src="https://ghbtns.com/github-btn.html?user=marlin-na&repo=r-api&type=watch&count=true&size=large"
+		allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+	</p>
+
+	
+
+	
+		
+
+		
+
+<h3>Navigation</h3>
+<ul>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/readme/">Index</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/environments/">environments.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/error-eval/">error-eval.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/external-pointers/">external-pointers.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/functions/">functions.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/gc-rc/">gc-rc.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/misc/">misc.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/oo/">oo.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/pairlists/">pairlists.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/save-load/">save-load.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/strings/">strings.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/symbols/">symbols.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/vectors/">vectors.md</a>
+	</li>
+	
+</ul>
+
+
+		<h3>Related Topics</h3>
+<ul>
+  <li><a href="https://marlin-na.github.io/r-api/">Documentation overview</a><ul>
+  <li>Previous: <a href="https://marlin-na.github.io/r-api/save-load/" title="save-load.md">save-load.md</a></li>
+  <li>Next: <a href="https://marlin-na.github.io/r-api/oo/" title="oo.md">oo.md</a></li>
+</ul>
+
+	</div>
+</div>
+<div class="clearer"></div>
+</div>
+			<div class="footer">
+	&copy; 2017 
+	|
+	Powered by <a href="http://gohugo.io/">Hugo 0.20.2</a>
+	&amp; <a href="https://github.com/digitalcraftsman/hugo-alabaster-theme">Alabaster</a>
+	
+</div>
+
+
+
+
+			
+
+			<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.3.0/highlight.min.js"></script>
+			<script>hljs.initHighlightingOnLoad();</script>
+			
+
+			
+		</div>
+	</body>
+</html>

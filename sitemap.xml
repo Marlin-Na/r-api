@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  
+  <url>
+    <loc>https://marlin-na.github.io/r-api/categories/</loc>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://marlin-na.github.io/r-api/readme/</loc>
+  </url>
+  
+  <url>
+    <loc>https://marlin-na.github.io/r-api/</loc>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://marlin-na.github.io/r-api/tags/</loc>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://marlin-na.github.io/r-api/environments/</loc>
+  </url>
+  
+  <url>
+    <loc>https://marlin-na.github.io/r-api/error-eval/</loc>
+  </url>
+  
+  <url>
+    <loc>https://marlin-na.github.io/r-api/external-pointers/</loc>
+  </url>
+  
+  <url>
+    <loc>https://marlin-na.github.io/r-api/functions/</loc>
+  </url>
+  
+  <url>
+    <loc>https://marlin-na.github.io/r-api/gc-rc/</loc>
+  </url>
+  
+  <url>
+    <loc>https://marlin-na.github.io/r-api/misc/</loc>
+  </url>
+  
+  <url>
+    <loc>https://marlin-na.github.io/r-api/oo/</loc>
+  </url>
+  
+  <url>
+    <loc>https://marlin-na.github.io/r-api/pairlists/</loc>
+  </url>
+  
+  <url>
+    <loc>https://marlin-na.github.io/r-api/save-load/</loc>
+  </url>
+  
+  <url>
+    <loc>https://marlin-na.github.io/r-api/strings/</loc>
+  </url>
+  
+  <url>
+    <loc>https://marlin-na.github.io/r-api/symbols/</loc>
+  </url>
+  
+  <url>
+    <loc>https://marlin-na.github.io/r-api/vectors/</loc>
+  </url>
+  
+</urlset>

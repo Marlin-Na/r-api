@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>R&#39;s C API</title>
+    <link>https://marlin-na.github.io/r-api/</link>
+    <description>Recent content on R&#39;s C API</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    
+	<atom:link href="https://marlin-na.github.io/r-api/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Index</title>
+      <link>https://marlin-na.github.io/r-api/readme/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://marlin-na.github.io/r-api/readme/</guid>
+      <description>R internals This repo aims to provide some useful additional information about R&amp;rsquo;s internal C API, or Rapi for short. This site draws heavily from Section 5 (&amp;ldquo;System and foreign language interfaces&amp;rdquo;) of Writing R extensions, R internals, and inspection of R&amp;rsquo;s source code to see how functions are used.
+Here we focus on best practices and modern tools. To wit, we recommend that you use R_NO_REMAP so all API functions have the prefix R_ or Rf_:</description>
+    </item>
+    
+    <item>
+      <title>environments.md</title>
+      <link>https://marlin-na.github.io/r-api/environments/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://marlin-na.github.io/r-api/environments/</guid>
+      <description>Environments (ENVSXP) Rboolean Rf_isEnvironment(SEXP x); // (TYPEOF(x) == ENVSXP)   R_GlobalEnv: The &amp;ldquo;global&amp;rdquo; environment R_EmptyEnv: An empty environment at the root of the environment tree R_BaseEnv: The base environment; formerly R_NilValue R_BaseNamespace: The (fake) namespace for base R_NamespaceRegistry: Registry for registered namespaces  Environments are commonly called rho in the sources.
+Get and set objects in environment symbol should be a SYMSXP; environment should be an ENVSXP.
+Get values Note that retrieving an variable from an environment may cause an allocation because it might be an active binding.</description>
+    </item>
+    
+    <item>
+      <title>error-eval.md</title>
+      <link>https://marlin-na.github.io/r-api/error-eval/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://marlin-na.github.io/r-api/error-eval/</guid>
+      <description>Errors and Evaluation Use Rf_errorcall(R_NilValue, ...) to suppress display of call.
+void Rf_error(const char* format, ...); void Rf_errorcall(SEXP call, const char* format, ...); void Rf_warning(const char* format, ...); void Rf_warningcall(SEXP call, const char*, ...); void Rf_warningcall_immediate(SEXP call, const char*, ...); // One of these things is not like the others... void R_ShowMessage(const char *s); // Print to stdout or stderr void Rprintf(const char *, ...); void REprintf(const char *, .</description>
+    </item>
+    
+    <item>
+      <title>external-pointers.md</title>
+      <link>https://marlin-na.github.io/r-api/external-pointers/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://marlin-na.github.io/r-api/external-pointers/</guid>
+      <description> External pointers (EXTPTRSXP) SEXP R_MakeExternalPtr(void *p, SEXP tag, SEXP prot); void *R_ExternalPtrAddr(SEXP s); SEXP R_ExternalPtrTag(SEXP s); SEXP R_ExternalPtrProtected(SEXP s); void R_ClearExternalPtr(SEXP s); void R_SetExternalPtrAddr(SEXP s, void *p); void R_SetExternalPtrTag(SEXP s, SEXP tag); void R_SetExternalPtrProtected(SEXP s, SEXP p);  Finalization typedef void (*R_CFinalizer_t)(SEXP); void R_RegisterFinalizer(SEXP s, SEXP fun); void R_RegisterCFinalizer(SEXP s, R_CFinalizer_t fun); void R_RegisterFinalizerEx(SEXP s, SEXP fun, Rboolean onexit); void R_RegisterCFinalizerEx(SEXP s, R_CFinalizer_t fun, Rboolean onexit); void R_RunPendingFinalizers(void);  Internals #define EXTPTR_PTR(x)	CAR(x) #define EXTPTR_PROT(x)	CDR(x) #define EXTPTR_TAG(x)	TAG(x)  </description>
+    </item>
+    
+    <item>
+      <title>functions.md</title>
+      <link>https://marlin-na.github.io/r-api/functions/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://marlin-na.github.io/r-api/functions/</guid>
+      <description> Functions (CLOSXP, BUILTINSXP, SPECIALSXP, FUNSXP) Rboolean Rf_isFunction(SEXP); Rboolean Rf_isPrimitive(SEXP);  FUNSXP is an abstract union type.
+Internals SEXP (FORMALS)(SEXP x); SEXP (BODY)(SEXP x); SEXP (CLOENV)(SEXP x); int (RDEBUG)(SEXP x); int (RSTEP)(SEXP x); int (RTRACE)(SEXP x); void (SET_RDEBUG)(SEXP x, int v); void (SET_RSTEP)(SEXP x, int v); void (SET_RTRACE)(SEXP x, int v); void SET_FORMALS(SEXP x, SEXP v); void SET_BODY(SEXP x, SEXP v); void SET_CLOENV(SEXP x, SEXP v);  Promises (PROMSXP) LibExtern SEXP	R_UnboundValue;	/* Unbound marker */ LibExtern SEXP	R_MissingArg;	/* Missing argument marker */  SEXP (PRCODE)(SEXP x); SEXP (PRENV)(SEXP x); SEXP (PRVALUE)(SEXP x); int (PRSEEN)(SEXP x); void (SET_PRSEEN)(SEXP x, int v); void SET_PRENV(SEXP x, SEXP v); void SET_PRVALUE(SEXP x, SEXP v); void SET_PRCODE(SEXP x, SEXP v); void SET_PRSEEN(SEXP x, int v);  Srcrefs LibExtern SEXP	R_Srcref; /* Current srcref, for debuggers */ SEXP R_GetCurrentSrcref(int); SEXP R_GetSrcFilename(SEXP);  </description>
+    </item>
+    
+    <item>
+      <title>gc-rc.md</title>
+      <link>https://marlin-na.github.io/r-api/gc-rc/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://marlin-na.github.io/r-api/gc-rc/</guid>
+      <description>Garbage collection and reference counting GC You might wonder what all the PROTECT() calls do. They tell R that the object is in use and shouldn&amp;rsquo;t be deleted if the garbage collector is activated. (We don&amp;rsquo;t need to protect objects that R already knows we&amp;rsquo;re using, like function arguments.)
+You also need to make sure that every protected object is unprotected. UNPROTECT() takes a single integer argument, n, and unprotects the last n objects that were protected.</description>
+    </item>
+    
+    <item>
+      <title>misc.md</title>
+      <link>https://marlin-na.github.io/r-api/misc/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://marlin-na.github.io/r-api/misc/</guid>
+      <description>Misc Other sexptypes Byte code (BCODESXP) #define BCODE_CODE(x)	CAR(x) #define BCODE_CONSTS(x) CDR(x) #define BCODE_EXPR(x)	TAG(x) #define isByteCode(x)	(TYPEOF(x)==BCODESXP) void R_initialize_bcode(void); SEXP R_bcEncode(SEXP); SEXP R_bcDecode(SEXP); SEXP R_PromiseExpr(SEXP); SEXP R_ClosureExpr(SEXP); #define PREXPR(e) R_PromiseExpr(e) #define BODY_EXPR(e) R_ClosureExpr(e)  Weak references (WEAKREFSXP) SEXP R_MakeWeakRef(SEXP key, SEXP val, SEXP fin, Rboolean onexit); SEXP R_MakeWeakRefC(SEXP key, SEXP val, R_CFinalizer_t fin, Rboolean onexit); SEXP R_WeakRefKey(SEXP w); SEXP R_WeakRefValue(SEXP w); void R_RunWeakRefFinalizer(SEXP w);  Sorting /* dummy renamed to II to avoid problems with g++ on Solaris */ void R_qsort (double *v, size_t i, size_t j); void R_qsort_I (double *v, int *II, int i, int j); void R_qsort_int (int *iv, size_t i, size_t j); void R_qsort_int_I(int *iv, int *II, int i, int j); #define revsort Rf_revsort #define iPsort Rf_iPsort #define rPsort Rf_rPsort #define cPsort Rf_cPsort /* .</description>
+    </item>
+    
+    <item>
+      <title>oo.md</title>
+      <link>https://marlin-na.github.io/r-api/oo/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://marlin-na.github.io/r-api/oo/</guid>
+      <description>Object oriented programming ANYSXP is used internal in S4 class definitions to flag that any SEXP is ok.
+Rboolean (Rf_isObject)(SEXP s);  S3 Rboolean Rf_inherits(SEXP, const char *); SEXP Rf_S3Class(SEXP); int Rf_isBasicClass(const char *); SEXP Rf_classgets(SEXP, SEXP);  S4 (S4SXP) Rboolean Rf_isS4(SEXP); SEXP Rf_asS4(SEXP, Rboolean, int); SEXP Rf_allocS4Object(void);  /* S3-S4 class (inheritance), attrib.c */ SEXP R_S4_extends(SEXP klass, SEXP useTable); /* class definition, new objects (objects.c) */ SEXP R_do_MAKE_CLASS(const char *what); SEXP R_getClassDef (const char *what); SEXP R_getClassDef_R(SEXP what); Rboolean R_has_methods_attached(void); Rboolean R_isVirtualClass(SEXP class_def, SEXP env); Rboolean R_extends (SEXP class1, SEXP class2, SEXP env); SEXP R_do_new_object(SEXP class_def); /* supporting a C-level version of is(.</description>
+    </item>
+    
+    <item>
+      <title>pairlists.md</title>
+      <link>https://marlin-na.github.io/r-api/pairlists/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://marlin-na.github.io/r-api/pairlists/</guid>
+      <description>Pairlists (LISTSXP, DOTSXP &amp;amp; LANGSXP) Pairlists are linked lists used for calls, unevaluated arguments, attributes, and in ....
+Rboolean Rf_isPairList(SEXP); // LISTSXP Rboolean Rf_isLanguage(SEXP); // LANGSXP Rboolean Rf_isList(SEXP); // LISTSXP, NILSXP  The terminology of pairlist comes from LISPs &amp;ldquo;dotted pairs&amp;rdquo; which is a way of describing &amp;ldquo;CONS&amp;rdquo; cells. A CONS cell is a pair of pointers:
+ &amp;ldquo;CAR&amp;rdquo; (contents of address register) points to an object &amp;ldquo;CDR&amp;rdquo; (contents of decrement register) points to the next element in the list.</description>
+    </item>
+    
+    <item>
+      <title>save-load.md</title>
+      <link>https://marlin-na.github.io/r-api/save-load/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://marlin-na.github.io/r-api/save-load/</guid>
+      <description>Serialisation /* Save/Load Interface */ #define R_XDR_DOUBLE_SIZE 8 #define R_XDR_INTEGER_SIZE 4 void R_XDREncodeDouble(double d, void *buf); double R_XDRDecodeDouble(void *buf); void R_XDREncodeInteger(int i, void *buf); int R_XDRDecodeInteger(void *buf); typedef void *R_pstream_data_t; typedef enum { R_pstream_any_format, R_pstream_ascii_format, R_pstream_binary_format, R_pstream_xdr_format, R_pstream_asciihex_format } R_pstream_format_t; typedef struct R_outpstream_st *R_outpstream_t; struct R_outpstream_st { R_pstream_data_t data; R_pstream_format_t type; int version; void (*OutChar)(R_outpstream_t, int); void (*OutBytes)(R_outpstream_t, void *, int); SEXP (*OutPersistHookFunc)(SEXP, SEXP); SEXP OutPersistHookData; }; typedef struct R_inpstream_st *R_inpstream_t; struct R_inpstream_st { R_pstream_data_t data; R_pstream_format_t type; int (*InChar)(R_inpstream_t); void (*InBytes)(R_inpstream_t, void *, int); SEXP (*InPersistHookFunc)(SEXP, SEXP); SEXP InPersistHookData; }; void R_InitInPStream(R_inpstream_t stream, R_pstream_data_t data, R_pstream_format_t type, int (*inchar)(R_inpstream_t), void (*inbytes)(R_inpstream_t, void *, int), SEXP (*phook)(SEXP, SEXP), SEXP pdata); void R_InitOutPStream(R_outpstream_t stream, R_pstream_data_t data, R_pstream_format_t type, int version, void (*outchar)(R_outpstream_t, int), void (*outbytes)(R_outpstream_t, void *, int), SEXP (*phook)(SEXP, SEXP), SEXP pdata); void R_InitFileInPStream(R_inpstream_t stream, FILE *fp, R_pstream_format_t type, SEXP (*phook)(SEXP, SEXP), SEXP pdata); void R_InitFileOutPStream(R_outpstream_t stream, FILE *fp, R_pstream_format_t type, int version, SEXP (*phook)(SEXP, SEXP), SEXP pdata); #ifdef NEED_CONNECTION_PSTREAMS /* The connection interface is not available to packages.</description>
+    </item>
+    
+    <item>
+      <title>strings.md</title>
+      <link>https://marlin-na.github.io/r-api/strings/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://marlin-na.github.io/r-api/strings/</guid>
+      <description>Strings (CHARSXP) A character vector (STRSXP) is effectively an array of pointers to CHARSXPs, which are stored in a global string pool. This design allows individual CHARSXP&amp;rsquo;s to be shared between multiple character vectors, reducing memory usage.
+Each CHARSXP has an encoding associated with it:
+typedef enum { CE_NATIVE = 0, CE_UTF8 = 1, CE_LATIN1 = 2, CE_BYTES = 3, CE_SYMBOL = 5, CE_ANY = 99 } cetype_t; cetype_t Rf_getCharCE(SEXP);  Creating from C strings // Use current encoding; null terminated string // [[SEXP creator]] SEXP Rf_mkChar(const char* x); // Use current encoding; specified length // [[SEXP creator]] SEXP Rf_mkCharLen(const char* x, int n); // Create in specified encoding // [[SEXP creator]] SEXP Rf_mkCharCE(const char* x, cetype_t encoding); // [[SEXP creator]] SEXP Rf_mkCharLenCE(const char* x, int n, cetype_t encoding);  (Typically these calls don&amp;rsquo;t need to be protected as they are immediately assigned into a STRSXP.</description>
+    </item>
+    
+    <item>
+      <title>symbols.md</title>
+      <link>https://marlin-na.github.io/r-api/symbols/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://marlin-na.github.io/r-api/symbols/</guid>
+      <description>Symbols (SYMSXP) Rboolean Rf_isSymbol(SEXP s);  Create If symbol exists, return it; otherwise create it. SYMSXPs don&amp;rsquo;t need to be protected because symbols are not currently reclaimed by the garbage collector. If you are using a symbol many times, it may be worth caching it to avoid repeated lookups.
+SEXP Rf_install(const char *); SEXP Rf_installChar(SEXP);  Mising symbol R_MissingArg represents the missing/empty symbol, i.e. the second argument in this call f(x, ).</description>
+    </item>
+    
+    <item>
+      <title>vectors.md</title>
+      <link>https://marlin-na.github.io/r-api/vectors/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://marlin-na.github.io/r-api/vectors/</guid>
+      <description>Vectors There are seven vector types in R:
+ Logical (LGLSXP), contains Rboolean.
+ Integer (INTSXP), contains int.
+ Double (REALSXP), contains double.
+ Complex (CPLXSXP), contains Rcomplex.
+ String (STRINGSXP), contains CHARSXP.
+ Lists (VECSXP), contains any other sexp. Beware: Lists are VECSXPs not LISTSXPs. This is because early implementations of lists were Lisp-like linked lists, which are now called as &amp;ldquo;pairlists&amp;rdquo;.
+ Raw (RAWSXP), contains Rbyte.
+ Expression (EXPRSXP), contains LANGSXP, SYMSXP or a vector (except for a list).</description>
+    </item>
+    
+  </channel>
+</rss>

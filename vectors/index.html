@@ -1,0 +1,475 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+	<head lang="en-us">
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+	<meta name="description" content="Documentation for R&#39;s internal C API">
+	<meta name="generator" content="Hugo 0.20.2" />
+	
+	<title>vectors.md &mdash; R&#39;s C API</title>
+	
+	<link rel="stylesheet" href="https://marlin-na.github.io/r-api/css/alabaster.css" type="text/css" />
+	<link rel="stylesheet" href="https://marlin-na.github.io/r-api/css/highlight.css" type="text/css" />
+
+	
+
+	<link rel="shortcut icon" href="https://marlin-na.github.io/r-api/favicon.ico" type="image/x-icon"/>
+</head>
+
+	<body role="document">
+		<div class="document">
+			<div class="documentwrapper">
+				<div class="bodywrapper">
+					<div class="body" role="main">
+						
+	<h1>vectors.md</h1>
+	
+	
+
+<h1 id="vectors">Vectors</h1>
+
+<p>There are seven vector types in R:</p>
+
+<ul>
+<li><p>Logical (<code>LGLSXP</code>), contains <code>Rboolean</code>.</p></li>
+
+<li><p>Integer (<code>INTSXP</code>), contains <code>int</code>.</p></li>
+
+<li><p>Double  (<code>REALSXP</code>), contains <code>double</code>.</p></li>
+
+<li><p>Complex (<code>CPLXSXP</code>), contains <code>Rcomplex</code>.</p></li>
+
+<li><p>String  (<code>STRINGSXP</code>), contains <code>CHARSXP</code>.</p></li>
+
+<li><p>Lists   (<code>VECSXP</code>), contains any other sexp. <strong>Beware:</strong> Lists are <code>VECSXP</code>s
+not <code>LISTSXP</code>s. This is because early implementations of lists were Lisp-like
+linked lists, which are now called as &ldquo;<a href="/r-api/pairlists/">pairlists</a>&rdquo;.</p></li>
+
+<li><p>Raw     (<code>RAWSXP</code>), contains <code>Rbyte</code>.</p></li>
+
+<li><p>Expression (<code>EXPRSXP</code>), contains <code>LANGSXP</code>, <code>SYMSXP</code> or a vector
+(except for a list).</p></li>
+</ul>
+
+<p>Three of those vectors are built on top of simple types defined by R:</p>
+
+<pre><code class="language-cpp">typedef unsigned char Rbyte;
+
+typedef enum { 
+  FALSE = 0, 
+  TRUE 
+} Rboolean;
+
+typedef struct {
+  double r;
+  double i;
+} Rcomplex;
+</code></pre>
+
+<h2 id="length">Length</h2>
+
+<p>After the SEXPTYPE, the most important property of a vector is it&rsquo;s length. Historically, R vectors were limited to length $2 ^ 31 -  1$. Still most vectors are shorter than this, so you can use an <code>int</code> based interface:</p>
+
+<pre><code class="language-cpp">typedef int R_len_t;
+// Get the length of a vector
+R_len_t Rf_length(SEXP x);
+// Set the length of a vector by creating a new vector of extended length
+// [[SEXP creator]]
+SEXP Rf_lengthgets(SEXP x, R_len_t n);
+</code></pre>
+
+<p>As of R 3.0.0, R vectors can have length up to $2 ^ 64 - 1$. If you want your code to be as general as possible, you should instead use the <code>R_xlen_t</code>based interface:</p>
+
+<pre><code class="language-cpp">// ptrdiff_t is the type of the result of subtracting two pointers, and
+// is usually 8 bytes (like a double)
+typedef ptrdiff_t R_xlen_t;
+R_xlen_t Rf_xlength(SEXP x);
+SEXP Rf_xlengthgets(SEXP x, R_xlen_t n);
+</code></pre>
+
+<p>These functions also have uppercase variants - in base R code these are implemented as macros for efficiency.</p>
+
+<pre><code class="language-cpp">int  LENGTH(SEXP x);
+void SETLENGTH(SEXP x, int v);
+R_xlen_t XLENGTH(SEXP x);
+int IS_LONG_VEC(SEXP x);
+</code></pre>
+
+<h2 id="create">Create</h2>
+
+<p>The most common way to create a new vector is with <code>Rf_allocVector()</code>:</p>
+
+<pre><code class="language-cpp">// [[SEXP creator]]
+SEXP Rf_allocVector(SEXPTYPE type, R_xlen_t n);
+</code></pre>
+
+<p>If you want to create a vector of length 1 from the corresponding C type, use:</p>
+
+<pre><code class="language-cpp">// [[SEXP creator]]
+SEXP Rf_ScalarLogical(int x);
+
+// [[SEXP creator]]
+SEXP Rf_ScalarInteger(int x);
+
+// [[SEXP creator]]
+SEXP Rf_ScalarReal(double x);
+
+// [[SEXP creator]]
+SEXP Rf_ScalarComplex(Rcomplex x);
+
+// [[SEXP creator]]
+SEXP Rf_ScalarRaw(Rbyte x);
+
+// Makes STRSXP from CHARSXP
+// [[SEXP creator]]
+SEXP Rf_ScalarString(SEXP);
+// Makes STRSXP from C string
+// [[SEXP creator]]
+SEXP Rf_mkString(const char*);
+</code></pre>
+
+<p>(Note, as with all SEXP creation functions you must <code>Rf_protect()</code> the result of any of these calls unless you&rsquo;re immediately assigning it into an already protected object)</p>
+
+<p>Alternatively you can coerce from an existing vector:</p>
+
+<pre><code class="language-cpp">// [[SEXP creator]]
+// Error: if can't coerce between TYPEOF(x) and newtype.
+SEXP Rf_coerceVector(SEXP x, SEXPTYPE newtype);
+</code></pre>
+
+<p>There are two rarer variants:</p>
+
+<pre><code class="language-cpp">// Given a null-terminated array of const char*'s, create an element
+// of that length, and initialise a character vector of names
+// [[SEXP creator]]
+SEXP Rf_mkNamed(SEXPTYPE type, const char ** names);
+
+// Create a vector with a custom memory allocator
+typedef void *(*custom_alloc_t)(R_allocator_t *allocator, size_t);
+typedef void  (*custom_free_t)(R_allocator_t *allocator, void *);
+typedef struct R_allocator {
+    custom_alloc_t mem_alloc; /* malloc equivalent */
+    custom_free_t  mem_free;  /* free equivalent */
+    void *res;                /* reserved (maybe for copy) - must be NULL */
+    void *data;               /* custom data for the allocator implementation */
+} R_allocator_t;
+// [[SEXP creator]]
+SEXP Rf_allocVector3(SEXPTYPE type, R_xlen_t type, R_allocator_t* allocator);
+</code></pre>
+
+<h2 id="get-and-set-values">Get and set values</h2>
+
+<p>The simple types are wrappers around an array of C values, so you get and set by using a helper that returns a pointer:</p>
+
+<pre><code class="language-cpp">int*      LOGICAL(SEXP x);
+int*      INTEGER(SEXP x);
+double*   REAL(SEXP x);
+Rcomplex* COMPLEX(SEXP x);
+Rbyte*    RAW(SEXP x);
+</code></pre>
+
+<p><strong>NB</strong>: these functions are all upper case and don&rsquo;t start with <code>Rf_</code>.</p>
+
+<p>When working with longer vectors, there&rsquo;s typically a performance advantage to saving the index and reusing. For example, instead of:</p>
+
+<pre><code class="language-cpp">for (int i = 0; i &lt; n; ++i) {
+  INTEGER(x)[i] = INTEGER(x)[i] * 2;
+}
+</code></pre>
+
+<p>Do:</p>
+
+<pre><code class="language-cpp">int* px = INTEGER(x);
+for (int i = 0; i &lt; n; ++i) {
+  px[i] = px[i] * 2;
+}
+</code></pre>
+
+<p>Strings and lists don&rsquo;t map to simple C structs, so instead have a pair of functions to get and set values.</p>
+
+<pre><code class="language-cpp">// Returns a CHARSXP
+SEXP STRING_ELT(SEXP x, R_xlen_t i);
+void SET_STRING_ELT(SEXP x, R_xlen_t i, SEXP v);
+
+// Returns potentially any SEXPTYPE
+SEXP VECTOR_ELT(SEXP x, R_xlen_t i);
+SEXP SET_VECTOR_ELT(SEXP x, R_xlen_t i, SEXP v);
+</code></pre>
+
+<p>(There is <code>STRING_PTR()</code> which is used in a hanful of places in the R source; <code>VECTOR_PTR()</code> is a deprecated interface that now throws an error.)</p>
+
+<h3 id="scalars">Scalars</h3>
+
+<p>There are a few helpers that extract the first value, coercing the vector as necessary:</p>
+
+<pre><code class="language-cpp">int Rf_asLogical(SEXP x);
+int Rf_asInteger(SEXP x);
+double Rf_asReal(SEXP x);
+Rcomplex Rf_asComplex(SEXP x);
+</code></pre>
+
+<h3 id="special-values">Special values</h3>
+
+<p>Integer, logical, and character vectors have special sentinels for missing values:</p>
+
+<pre><code class="language-cpp">#define NA_LOGICAL	R_NaInt
+#define NA_INTEGER	R_NaInt
+#define NA_STRING	R_NaString
+int	 R_NaInt;	    /* NA_INTEGER:= INT_MIN currently */
+</code></pre>
+
+<p>Missing values are somewhat more complicated for <code>REALSXP</code> because there is an existing protocol for missing values defined by the floating point standard (<a href="http://en.wikipedia.org/wiki/IEEE_floating_point">IEEE 754</a>). In doubles, an <code>NA</code> is <code>NaN</code> with a special bit pattern (the lowest word is 1954, the year Ross Ihaka was born), and there are other special values for positive and negative infinity. Use <code>ISNA()</code>, <code>ISNAN()</code>, and <code>!R_FINITE()</code> macros to check for missing, NaN, or non-finite values. Use the constants <code>NA_REAL</code>, <code>R_NaN</code>, <code>R_PosInf</code>, and <code>R_NegInf</code> to set those values.</p>
+
+<pre><code class="language-cpp">// Provided for cross-platform safety
+double R_NaN;
+double R_PosInf;
+double R_NegInf;
+
+double R_NaReal; // NaN used to represent NA in R
+#define NA_REAL		R_NaReal
+
+int R_IsNA(double);
+int R_IsNaN(double);
+int R_finite(double);	 // not NA, NaN, Inf, or -Inf
+</code></pre>
+
+<h2 id="test">Test</h2>
+
+<p>A number of helpers let you test if an SEXP is of the given type:</p>
+
+<pre><code class="language-cpp">Rboolean Rf_isLogical(SEXP s);
+Rboolean Rf_isInteger(SEXP);
+Rboolean Rf_isReal(SEXP s);
+Rboolean Rf_isComplex(SEXP s);
+Rboolean Rf_isString(SEXP s);
+Rboolean Rf_isExpression)(SEXP s);
+</code></pre>
+
+<p><strong>NB</strong>: there&rsquo;s no function to test for <code>RAWSXP</code> or <code>VECSXP</code>; you use must use <code>TYPEOF(x) == RAWSXP</code>, or <code>TYPEOF(x) == VECSXP</code>. <code>isList()</code> tests if the object is a pairlist.</p>
+
+<p>A handful of functions test for frequently used combinations of variable types:</p>
+
+<pre><code>Rboolean Rf_isNewList(SEXP); // NILSXP, VECSXP
+Rboolean Rf_isVectorAtomic(SEXP); // LGLSXP, INTSXP, REALSXP, CPLXSXP, STRSXP, RAWSXP
+Rboolean Rf_isVectorList(SEXP); // LISTSXP, EXPRSXP
+Rboolean Rf_isVector(SEXP); // isVectorAtomic(x) || isVectorList()
+Rboolean Rf_isNumber(SEXP); // INTSXP (but not factor), LGLSXP, REALSXP, CPLXSXP
+Rboolean Rf_isNumeric(SEXP); // INTSXP (but not factor), REALSXP, CPLXSXP
+</code></pre>
+
+<p><strong>NB</strong>: these are not always consistent with their R equivalents. For example, <code>Rf_isVectorAtomic(R_NilValue)</code> is false, but <code>is.atomic(NULL)</code> is true; <code>Rf_isNewList(R_NilValue)</code> is true; but <code>is.list(NULL)</code> is false. Because of this confusion, I recommend writing your own wrapper around <code>TYPEOF(x)</code>.</p>
+
+<p><strong>NB</strong>: Be careful when checking whether whether an R object is an integer vector. Internally, <code>factor</code>s are also <code>INTSXP</code>s so <code>TYPEOF(x) == INTSXP</code> would accept both vanilla integer vectors and factors. (Prefer using <code>Rf_isInteger()</code> and <code>Rf_isFactor()</code> for these cases.)</p>
+
+<p><strong>NB</strong>: It is somewhat strange that <code>Rf_isNewList()</code> returns <code>TRUE</code> for <code>R_NilValue</code>, given that <code>R_NilValue</code> is just an empty pairlist (ie, <code>NULL</code> and <code>pairlist()</code> are identical).</p>
+
+<h1 id="variants">Variants</h1>
+
+<p>The R API provides some support for the various data structures built on top of vectors.</p>
+
+<h2 id="arrays">Arrays</h2>
+
+<p>Arrays are vectors with a dim attribute:</p>
+
+<pre><code class="language-cpp">Rboolean Rf_isArray(SEXP x);
+
+SEXP Rf_alloc3DArray(SEXPTYPE type, int, int, int);
+SEXP Rf_allocArray(SEXPTYPE type, SEXP);
+
+SEXP Rf_GetArrayDimnames(SEXP);
+// [[SEXP creator]]
+SEXP Rf_dimgets(SEXP, SEXP);
+// [[SEXP creator]]
+SEXP Rf_dimnamesgets(SEXP, SEXP);
+
+SEXP Rf_DropDims(SEXP);
+
+
+SEXP Rf_arraySubscript(int, SEXP, SEXP, SEXP (*)(SEXP,SEXP),SEXP (*)(S EXP, int), SEXP);
+</code></pre>
+
+<h3 id="matrices">Matrices</h3>
+
+<p>Matrices are a special case of arrays; those with 2 dimensions:</p>
+
+<pre><code class="language-cpp">SEXP Rf_allocMatrix(SEXPTYPE type, int nrow, int ncol);
+Rboolean Rf_isMatrix(SEXP);
+SEXP Rf_GetColNames(SEXP x);
+SEXP Rf_GetRowNames(SEXP x);
+
+// rl, cl are output parameters: row and col names as sexps
+// rownames and colnames are output parameters 
+void Rf_GetMatrixDimnames(SEXP x, SEXP* rl, SEXP* cl, 
+  const char** rownames, const char** colnames);
+
+int Rf_ncols(SEXP x);
+int Rf_nrows(SEXP x);
+
+void Rf_copyMatrix(SEXP source, SEXP target, Rboolean byrow);
+void Rf_copyListMatrix(SEXP source, SEXP target, Rboolean byrow);
+</code></pre>
+
+<h3 id="factors">Factors</h3>
+
+<pre><code class="language-cpp">Rboolean Rf_isFactor(SEXP);
+int	 Rf_nlevels(SEXP);
+Rboolean Rf_isOrdered(SEXP);
+Rboolean Rf_isUnordered(SEXP);
+
+// Coerce into character vector
+SEXP Rf_asCharacterFactor(SEXP x);
+</code></pre>
+
+<h3 id="data-frame">Data frame</h3>
+
+<pre><code class="language-cpp">Rboolean Rf_isFrame(SEXP);
+</code></pre>
+
+<h2 id="miscellaneous-helpers">Miscellaneous helpers</h2>
+
+<pre><code class="language-cpp">// Copies from source to target, recylcing as necessary.
+void Rf_copyVector(SEXP source, SEXP target);
+// use Rf_duplicate if you simply want to duplicate a vector
+
+// Extract tail of a STRSXP
+// [[SEXP creator]]
+SEXP Rf_stringSuffix(SEXP string, int fromIndex);
+</code></pre>
+
+<p>A couple of macros aid in testing if an object is a &ldquo;scalar&rdquo; (a vector of length 1):</p>
+
+<pre><code class="language-cpp">#define IS_SCALAR(x, type) (TYPEOF(x) == (type) &amp;&amp; XLENGTH(x) == 1)
+#define IS_SIMPLE_SCALAR(x, type) (IS_SCALAR(x, type) &amp;&amp; ATTRIB(x) == R_NilValue)
+
+// Checks to see if a list can be converted into a vector, i.e. each element
+// of a list or pairlist is a vector of length 0 or 1
+Rboolean Rf_isVectorizable(SEXP);
+
+// returns LGLSXP same length as x
+// [[SEXP creator]]
+SEXP Rf_duplicated(SEXP x, Rboolean from_last);
+</code></pre>
+
+
+
+						
+					</div>
+				</div>
+			</div>
+			
+			<div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+	<div class="sphinxsidebarwrapper">
+		<p class="logo">
+			<a href="https://marlin-na.github.io/r-api/">
+				<img class="logo" src="https://marlin-na.github.io/r-api/favicon.ico" alt="Logo"/>
+				<h1 class="logo logo-name">R&#39;s C API</h1>
+			</a>
+		</p>
+		
+		<p class="blurb">Documentation for R&rsquo;s internal C API</p>
+
+		
+
+	<p>
+		<iframe src="https://ghbtns.com/github-btn.html?user=marlin-na&repo=r-api&type=watch&count=true&size=large"
+		allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+	</p>
+
+	
+
+	
+		
+
+		
+
+<h3>Navigation</h3>
+<ul>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/readme/">Index</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/environments/">environments.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/error-eval/">error-eval.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/external-pointers/">external-pointers.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/functions/">functions.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/gc-rc/">gc-rc.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/misc/">misc.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/oo/">oo.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/pairlists/">pairlists.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/save-load/">save-load.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/strings/">strings.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/symbols/">symbols.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/vectors/">vectors.md</a>
+	</li>
+	
+</ul>
+
+
+		<h3>Related Topics</h3>
+<ul>
+  <li><a href="https://marlin-na.github.io/r-api/">Documentation overview</a><ul>
+  
+  <li>Next: <a href="https://marlin-na.github.io/r-api/symbols/" title="symbols.md">symbols.md</a></li>
+</ul>
+
+	</div>
+</div>
+<div class="clearer"></div>
+</div>
+			<div class="footer">
+	&copy; 2017 
+	|
+	Powered by <a href="http://gohugo.io/">Hugo 0.20.2</a>
+	&amp; <a href="https://github.com/digitalcraftsman/hugo-alabaster-theme">Alabaster</a>
+	
+</div>
+
+
+
+
+			
+
+			<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.3.0/highlight.min.js"></script>
+			<script>hljs.initHighlightingOnLoad();</script>
+			
+
+			
+		</div>
+	</body>
+</html>

@@ -1,0 +1,273 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+	<head lang="en-us">
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+	<meta name="description" content="Documentation for R&#39;s internal C API">
+	<meta name="generator" content="Hugo 0.20.2" />
+	
+	<title>gc-rc.md &mdash; R&#39;s C API</title>
+	
+	<link rel="stylesheet" href="https://marlin-na.github.io/r-api/css/alabaster.css" type="text/css" />
+	<link rel="stylesheet" href="https://marlin-na.github.io/r-api/css/highlight.css" type="text/css" />
+
+	
+
+	<link rel="shortcut icon" href="https://marlin-na.github.io/r-api/favicon.ico" type="image/x-icon"/>
+</head>
+
+	<body role="document">
+		<div class="document">
+			<div class="documentwrapper">
+				<div class="bodywrapper">
+					<div class="body" role="main">
+						
+	<h1>gc-rc.md</h1>
+	
+	
+
+<h1 id="garbage-collection-and-reference-counting">Garbage collection and reference counting</h1>
+
+<h2 id="gc">GC</h2>
+
+<p>You might wonder what all the <code>PROTECT()</code> calls do. They tell R that the object is in use and shouldn&rsquo;t be deleted if the garbage collector is activated. (We don&rsquo;t need to protect objects that R already knows we&rsquo;re using, like function arguments.)</p>
+
+<p>You also need to make sure that every protected object is unprotected. <code>UNPROTECT()</code> takes a single integer argument, <code>n</code>, and unprotects the last n objects that were protected. The number of protects and unprotects must match. If not, R will warn about a &ldquo;stack imbalance in .Call&rdquo;.  Other specialised forms of protection are needed in some circumstances:</p>
+
+<ul>
+<li><p><code>UNPROTECT_PTR()</code> unprotects the object pointed to by the <code>SEXP</code>,</p></li>
+
+<li><p><code>PROTECT_WITH_INDEX()</code> saves an index of the protection location that can
+be used to replace the protected value using <code>REPROTECT()</code>.</p></li>
+</ul>
+
+<p>Consult the R externals section on <a href="http://cran.r-project.org/doc/manuals/R-exts.html#Garbage-Collection">garbage collection</a> for more details.</p>
+
+<h2 id="how-protect-works">How PROTECT works</h2>
+
+<p>Objects protected by <code>PROTECT()</code> are placed on a protection stack (internally called <code>R_PPStack</code>), which itself is just an array of <code>SEXP</code>s. A protection index, called <code>R_PPStackTop</code>, denotes the top of the protection stack. When <code>UNPROTECT()</code>ing a (number) of objects, the stack top is decremented, and so all <code>SEXP</code>s &lsquo;overflowing&rsquo; the <code>R_PPStack</code> are considered unprotected and hence eligible for garbage collection.</p>
+
+<p>Note that this implies that <code>PROTECT_WITH_INDEX()</code> and <code>REPROTECT()</code> are merely APIs for modifying elements within the protection stack. <code>UNPROTECT_PTR()</code> performs a search (from the top of the stack) to find the element to unprotect.</p>
+
+<h2 id="using-protect">Using PROTECT</h2>
+
+<p>Properly protecting the R objects you allocate is extremely important! Improper protection leads to difficulty diagnosing errors, typically segfaults, but other corruption is possible as well. In general, if you allocate a new R object, you must <code>PROTECT</code> it.</p>
+
+<h3 id="r-preserveobject-r-releaseobject">R_PreserveObject, R_ReleaseObject</h3>
+
+<p>The primary structure that R uses for protecting objects is the so-called <code>R_PreciousList</code>, which is just a pairlist of <code>SEXP</code>s. The aforementioned <code>R_PPStack</code> is part of this <code>R_PreciousList</code> (and hence is the mechanism by which those <code>SEXP</code>s become protected). <code>R_PreserveObject()</code> and <code>R_ReleaseObject()</code> are mechanisms for inserting and removing <code>SEXP</code>s from this precious list.</p>
+
+<p>These functions need to be used with care: because <code>R_ReleaseObject()</code> will perform a recursive search for the object to protect, if many <code>SEXP</code>s are inserted and later removed in the same order, this can cause performance regressions. See <a href="https://github.com/hadley/dplyr/issues/1396">this dplyr issue</a> for an interesting manifestation of this problem.</p>
+
+<pre><code class="language-cpp">#define NEWSXP      30    /* fresh node created in new page */
+#define FREESXP     31    /* node released by GC */
+
+void R_PreserveObject(SEXP);
+void R_ReleaseObject(SEXP);
+
+void R_ProtectWithIndex(SEXP, PROTECT_INDEX *);
+void R_Reprotect(SEXP, PROTECT_INDEX);
+SEXP Rf_protect(SEXP);
+void Rf_unprotect_ptr(SEXP);
+void Rf_unprotect(int);
+
+/* Pointer Protection and Unprotection */
+#define PROTECT(s)	Rf_protect(s)
+#define UNPROTECT(n)	Rf_unprotect(n)
+#define UNPROTECT_PTR(s)	Rf_unprotect_ptr(s)
+
+/* We sometimes need to coerce a protected value and place the new
+coerced value under protection.  For these cases PROTECT_WITH_INDEX
+saves an index of the protection location that can be used to
+replace the protected value using REPROTECT. */
+typedef int PROTECT_INDEX;
+#define PROTECT_WITH_INDEX(x,i) R_ProtectWithIndex(x,i)
+#define REPROTECT(x,i) R_Reprotect(x,i)
+
+void	R_gc(void);
+int	  R_gc_running();
+
+Rboolean R_cycle_detected(SEXP s, SEXP child);
+
+</code></pre>
+
+<h2 id="memory-size">Memory size</h2>
+
+<pre><code class="language-cpp">void*	vmaxget(void);
+void	vmaxset(const void *);
+</code></pre>
+
+<h2 id="manual-memory-management">Manual memory management</h2>
+
+<pre><code class="language-cpp">char*	R_alloc(size_t, int);
+long double *R_allocLD(size_t nelem);
+char*	S_alloc(long, int);
+char*	S_realloc(char *, long, long, int);
+</code></pre>
+
+<h2 id="reference-counting">Reference counting</h2>
+
+<p>You must be very careful when modifying function inputs. If you&rsquo;re working with lists, use <code>shallow_duplicate()</code> to make a shallow copy; <code>duplicate()</code> will also copy every element in the list.</p>
+
+<pre><code class="language-cpp">#define MAYBE_SHARED(x) (NAMED(x) &gt; 1)
+#define NO_REFERENCES(x) (NAMED(x) == 0)
+#define MARK_NOT_MUTABLE(x) SET_NAMED(x, NAMEDMAX)
+#define MAYBE_REFERENCED(x) (! NO_REFERENCES(x))
+#define NOT_SHARED(x) (! MAYBE_SHARED(x))
+
+/* Complex assignment support */
+/* temporary definition that will need to be refined to distinguish
+getter from setter calls */
+#define IS_GETTER_CALL(call) (CADR(call) == R_TmpvalSymbol)
+</code></pre>
+
+<h3 id="efficient-copying">Efficient copying</h3>
+
+<pre><code class="language-cpp">SEXP Rf_duplicate(SEXP);
+SEXP Rf_shallow_duplicate(SEXP);
+SEXP Rf_lazy_duplicate(SEXP);
+</code></pre>
+
+<h3 id="internals">Internals</h3>
+
+<pre><code class="language-cpp">/* General Cons Cell Attributes */
+int  (OBJECT)(SEXP x);
+int  (MARK)(SEXP x);
+int  (TYPEOF)(SEXP x);
+int  (NAMED)(SEXP x);
+int  (REFCNT)(SEXP x);
+void (SET_OBJECT)(SEXP x, int v);
+void (SET_TYPEOF)(SEXP x, int v);
+void (SET_NAMED)(SEXP x, int v);
+
+int  (LEVELS)(SEXP x);
+int  (SETLEVELS)(SEXP x, int v);
+
+#define TYPE_BITS 5
+#define MAX_NUM_SEXPTYPE (1&lt;&lt;TYPE_BITS)
+
+</code></pre>
+
+
+
+						
+					</div>
+				</div>
+			</div>
+			
+			<div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+	<div class="sphinxsidebarwrapper">
+		<p class="logo">
+			<a href="https://marlin-na.github.io/r-api/">
+				<img class="logo" src="https://marlin-na.github.io/r-api/favicon.ico" alt="Logo"/>
+				<h1 class="logo logo-name">R&#39;s C API</h1>
+			</a>
+		</p>
+		
+		<p class="blurb">Documentation for R&rsquo;s internal C API</p>
+
+		
+
+	<p>
+		<iframe src="https://ghbtns.com/github-btn.html?user=marlin-na&repo=r-api&type=watch&count=true&size=large"
+		allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+	</p>
+
+	
+
+	
+		
+
+		
+
+<h3>Navigation</h3>
+<ul>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/readme/">Index</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/environments/">environments.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/error-eval/">error-eval.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/external-pointers/">external-pointers.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/functions/">functions.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/gc-rc/">gc-rc.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/misc/">misc.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/oo/">oo.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/pairlists/">pairlists.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/save-load/">save-load.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/strings/">strings.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/symbols/">symbols.md</a>
+	</li>
+	
+	<li class="toctree-l1">
+		<a class="reference internal" href="/r-api/vectors/">vectors.md</a>
+	</li>
+	
+</ul>
+
+
+		<h3>Related Topics</h3>
+<ul>
+  <li><a href="https://marlin-na.github.io/r-api/">Documentation overview</a><ul>
+  <li>Previous: <a href="https://marlin-na.github.io/r-api/misc/" title="misc.md">misc.md</a></li>
+  <li>Next: <a href="https://marlin-na.github.io/r-api/functions/" title="functions.md">functions.md</a></li>
+</ul>
+
+	</div>
+</div>
+<div class="clearer"></div>
+</div>
+			<div class="footer">
+	&copy; 2017 
+	|
+	Powered by <a href="http://gohugo.io/">Hugo 0.20.2</a>
+	&amp; <a href="https://github.com/digitalcraftsman/hugo-alabaster-theme">Alabaster</a>
+	
+</div>
+
+
+
+
+			
+
+			<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.3.0/highlight.min.js"></script>
+			<script>hljs.initHighlightingOnLoad();</script>
+			
+
+			
+		</div>
+	</body>
+</html>
