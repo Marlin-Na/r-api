@@ -12,7 +12,7 @@ pull-source:
 .PHONY: all clean pull-source
 
 
-content: source
+content: source build.R
 	Rscript build.R;
 
 public: content

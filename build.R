@@ -14,6 +14,11 @@ addyaml <- function (path, content) {
     return(TRUE)
 }
 
+sublinks <- function (path) {
+    system2("sed",
+        c("-i", shQuote("s/\\](\\([A-Za-z-]*\\.md\\))/]({{< relref \"\\1\" >}})/g"), path)
+    )
+}
 
 
 tmpdir <- tempfile(pattern = "dir")
@@ -29,9 +34,12 @@ indexfile   <- mdfiles[basename(mdfiles) == "README.md"]
 commonfiles <- mdfiles[basename(mdfiles) != "README.md"]
 
 addyaml(indexfile, list(menu = "main", type = "homepage", title = "Index"))
+sublinks(indexfile)
 
-for (i in commonfiles)
+for (i in commonfiles) {
     addyaml(i, list(menu = "main", title = basename(i)))
+    sublinks(i)
+}
 
 file.copy(tmpdir, ".", recursive = TRUE)
 
