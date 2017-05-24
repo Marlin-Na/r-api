@@ -18,6 +18,9 @@ sublinks <- function (path) {
     system2("sed",
         c("-i", shQuote("s/\\](\\([A-Za-z-]*\\.md\\))/]({{< relref \"\\1\" >}})/g"), path)
     )
+    system2("sed",
+        c("-i", shQuote("s/\\](\\(diagrams\\/[A-Za-z-]*\\.png\\))/](\\/r-api\\/\\1)/g"), path)
+    )
 }
 
 
@@ -42,5 +45,6 @@ for (i in commonfiles) {
 }
 
 file.copy(tmpdir, ".", recursive = TRUE)
+file.copy(file.path(tmpdir, "diagrams"), "static", recursive = TRUE)
 
 cat("Done!", "\n")
